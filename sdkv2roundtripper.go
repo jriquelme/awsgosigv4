@@ -18,25 +18,26 @@ import (
 // SignV4SDKV2 is a http.RoundTripper to sign requests using aws-sdk-go-v2
 type SignV4SDKV2 struct {
 	RoundTripper http.RoundTripper
-	Credentials  aws.CredentialsProvider
+	Credentials  aws.Credentials
 	Region       string
 	Service      string
 	Now          func() time.Time
 }
 
 func (s *SignV4SDKV2) RoundTrip(req *http.Request) (*http.Response, error) {
-	signer := v4.NewSigner(s.Credentials)
+	signer := v4.NewSigner()
 	payloadHash, newReader, err := hashPayload(req.Body)
 	if err != nil {
 		return nil, err
 	}
 	req.Body = newReader
-	err = signer.SignHTTP(context.Background(), req, payloadHash, s.Service, s.Region, s.Now())
+	err = signer.SignHTTP(context.Background(), s.Credentials, req, payloadHash, s.Service, s.Region, s.Now())
 	if err != nil {
 		return nil, fmt.Errorf("error signing request: %w", err)
 	}
 	return s.RoundTripper.RoundTrip(req)
 }
+
 
 func hashPayload(r io.ReadCloser) (payloadHash string, newReader io.ReadCloser, err error) {
 	var payload []byte
