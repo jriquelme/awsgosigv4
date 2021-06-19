@@ -70,8 +70,11 @@ func (r *verifyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 		return recorder.Result(), nil
 	}
 	// sign
-	signer := v4.NewSigner(aws.NewStaticCredentialsProvider(r.Key, r.Secret, ""))
-	err = signer.SignHTTP(context.Background(), req2, hexHash, r.Service, r.Region, signingTime)
+	signer := v4.NewSigner()
+	err = signer.SignHTTP(context.Background(), aws.Credentials{
+		AccessKeyID:     r.Key,
+		SecretAccessKey: r.Secret,
+	}, req2, hexHash, r.Service, r.Region, signingTime)
 	if err != nil {
 		recorder.WriteHeader(http.StatusBadRequest)
 		_, _ = fmt.Fprintf(recorder, "error signing request copy: %s", err)
@@ -100,10 +103,13 @@ func TestSignV4SDKV2_RoundTripOK(t *testing.T) {
 		}
 		r := &awsgosignv4.SignV4SDKV2{
 			RoundTripper: verifier,
-			Credentials:  aws.NewStaticCredentialsProvider("jriquelme", "notedigo", ""),
-			Region:       "us-east-1",
-			Service:      "es",
-			Now:          time.Now,
+			Credentials: aws.Credentials{
+				AccessKeyID:     "jriquelme",
+				SecretAccessKey: "notedigo",
+			},
+			Region:  "us-east-1",
+			Service: "es",
+			Now:     time.Now,
 		}
 		return r, verifier
 	}
@@ -177,10 +183,13 @@ func TestSignV4SDKV2_RoundTripErr(t *testing.T) {
 				req.Header.Set("X-Oh-No", "asdf")
 			},
 		},
-		Credentials: aws.NewStaticCredentialsProvider("jriquelme", "notedigo", ""),
-		Region:      "us-east-1",
-		Service:     "es",
-		Now:         time.Now,
+		Credentials: aws.Credentials{
+			AccessKeyID:     "jriquelme",
+			SecretAccessKey: "notedigo",
+		},
+		Region:  "us-east-1",
+		Service: "es",
+		Now:     time.Now,
 	}
 
 	request, err := http.NewRequest("POST", "http://localhost/hi", bytes.NewReader([]byte(`{"msg":"hi"}`)))
