@@ -38,7 +38,6 @@ func (s *SignV4SDKV2) RoundTrip(req *http.Request) (*http.Response, error) {
 	return s.RoundTripper.RoundTrip(req)
 }
 
-
 func hashPayload(r io.ReadCloser) (payloadHash string, newReader io.ReadCloser, err error) {
 	var payload []byte
 	if r == nil {
